@@ -4,6 +4,7 @@
 import { useState, useMemo } from '../../vendor/hooks.module.js';
 import { html, Icon, TierChip, Tooltip } from './components.js';
 import { data, useData, localAsset } from '../data.js';
+import { t } from '../i18n.js';
 import { parseRichText, rtClassName } from './richText.js';
 import {
   uiUrl, chessAvatarUrl, chessPortraitUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl, bondIconUrl, bandIconUrl,
@@ -98,18 +99,18 @@ export function UnitThumb({ kind = 'chess', id, golden, size = 'md', tier, showT
   const m = data.get('assets');
   let src = null;
   let name = '';
-  let t = tier;
+  let tr = tier;
   if (kind === 'chess') {
     const c = data.lookup('chess', id);
     src = chessAvatarUrl(m, c);
     name = c?.name || '';
-    t = t ?? c?.tier;
+    tr = tr ?? c?.tier;
     golden = golden ?? !!c?.isGolden;
   } else if (kind === 'item') {
     const it = data.lookup('items', id);
     src = itemIconUrl(m, it);
     name = it?.name || '';
-    t = t ?? it?.tier;
+    tr = tr ?? it?.tier;
     golden = golden ?? !!it?.isGolden;
   } else if (kind === 'token') {
     const tk = data.lookup('tokens', id);
@@ -121,13 +122,13 @@ export function UnitThumb({ kind = 'chess', id, golden, size = 'md', tier, showT
     name = e?.name || '';
   }
   const glyph = [...(name || '?')][0] || '?';
-  return html`<span class=${cx('uthumb', `uthumb--${size}`, `uthumb--${kind}`, golden && 'is-golden', dim && 'is-dim', t && `uthumb--t${Math.max(1, Math.min(6, t | 0))}`, cls)}
+  return html`<span class=${cx('uthumb', `uthumb--${size}`, `uthumb--${kind}`, golden && 'is-golden', dim && 'is-dim', tr && `uthumb--t${Math.max(1, Math.min(6, tr | 0))}`, cls)}
       title=${title ?? name}>
     <span class="uthumb__art">
       <${Img} src=${src} fallback=${html`<span class="uthumb__glyph">${glyph}</span>`} />
     </span>
-    ${showTier && t && kind !== 'enemy' && kind !== 'token' ? html`<${TierChip} tier=${t} golden=${golden} size="sm" class="uthumb__tier" />` : null}
-    ${kind === 'token' ? html`<span class="uthumb__tag">召唤</span>` : null}
+    ${showTier && tr && kind !== 'enemy' && kind !== 'token' ? html`<${TierChip} tier=${tr} golden=${golden} size="sm" class="uthumb__tier" />` : null}
+    ${kind === 'token' ? html`<span class="uthumb__tag">${t('召唤')}</span>` : null}
     ${badge}
   </span>`;
 }
@@ -193,11 +194,11 @@ export function GIcon({ name, class: cls, title }) {
 export function LpTower({ value, size = 'md', class: cls, tone, pending = 0, note = null, tip = null }) {
   const ok = Number.isFinite(value);
   const p = ok && Number(pending) > 0 ? Math.min(value, Math.trunc(Number(pending))) : 0;
-  return html`<span class=${cx('lp', `lp--${size}`, tone && `lp--${tone}`, p > 0 && 'is-pending', cls)} title=${tip || '目标生命值'}
+  return html`<span class=${cx('lp', `lp--${size}`, tone && `lp--${tone}`, p > 0 && 'is-pending', cls)} title=${tip || t('目标生命值')}
       data-pending=${p > 0 ? p : null}>
     <${Sprite} k="hudPanel/icon_hp" class="lp__icon" fallback=${html`<${Icon} name="rook" class="lp__icon" />`} />
     <b class="num lp__val">${ok ? Math.max(0, value - p) : '--'}</b>
-    ${p > 0 ? html`<span key=${p} class="lp__pend num" aria-label=${`结算时扣除 ${p}`}>−${p}</span>` : null}
+    ${p > 0 ? html`<span key=${p} class="lp__pend num" aria-label=${t('结算时扣除 {n}', { n: p })}>−${p}</span>` : null}
     ${note ? html`<span class="lp__note">${note}</span>` : null}
   </span>`;
 }
@@ -251,7 +252,7 @@ export function PlayerAvatar({ player, size = 'md', self = false, class: cls }) 
     <span class="pavatar__img">
       <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
     </span>
-    ${dead ? html`<span class="pavatar__x" aria-label="已淘汰"><${Icon} name="close" /></span>` : null}
-    ${left ? html`<span class="pavatar__door" aria-label="已离开"><${Icon} name="exit" /></span>` : null}
+    ${dead ? html`<span class="pavatar__x" aria-label=${t('已淘汰')}><${Icon} name="close" /></span>` : null}
+    ${left ? html`<span class="pavatar__door" aria-label=${t('已离开')}><${Icon} name="exit" /></span>` : null}
   </span>`;
 }

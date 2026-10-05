@@ -10,6 +10,7 @@
 // (shared/protocol.js loadoutOptions / checkLoadout), so a sanitised loadout is always accepted.
 
 import { loadoutOptions, checkLoadout, resolveLoadout, MODULE_NONE, LOADOUT_LIMITS } from '../../../shared/protocol.js';
+import { t } from '../i18n.js';
 
 export { MODULE_NONE };
 
@@ -18,14 +19,14 @@ export const LOADOUT_PREF = 'loadout';
 export const LOADOUT_VERSION = 1;
 
 export const PROF_ORDER = ['PIONEER', 'WARRIOR', 'TANK', 'SNIPER', 'CASTER', 'MEDIC', 'SUPPORT', 'SPECIAL'];
-export const PROF_NAME = Object.freeze({ PIONEER: '先锋', WARRIOR: '近卫', TANK: '重装', SNIPER: '狙击', CASTER: '术师', MEDIC: '医疗', SUPPORT: '辅助', SPECIAL: '特种' });
-export const SP_TYPE = Object.freeze({ INCREASE_WITH_TIME: '自动回复', INCREASE_WHEN_ATTACK: '攻击回复', INCREASE_WHEN_TAKEN_DAMAGE: '受击回复', ON_DEPLOY: '被动', 8: '被动' });
+export const PROF_NAME = Object.freeze({ PIONEER: t('先锋'), WARRIOR: t('近卫'), TANK: t('重装'), SNIPER: t('狙击'), CASTER: t('术师'), MEDIC: t('医疗'), SUPPORT: t('辅助'), SPECIAL: t('特种') });
+export const SP_TYPE = Object.freeze({ INCREASE_WITH_TIME: t('自动回复'), INCREASE_WHEN_ATTACK: t('攻击回复'), INCREASE_WHEN_TAKEN_DAMAGE: t('受击回复'), ON_DEPLOY: t('被动'), 8: t('被动') });
 /** Module attribute keys (ModuleRecord.attr / battle_equip attributeBlackboard) → label + unit. */
 export const ATTR_LABEL = Object.freeze({
-  maxHp: ['生命上限', ''], max_hp: ['生命上限', ''], atk: ['攻击力', ''], def: ['防御力', ''], res: ['法术抗性', ''],
-  magic_resistance: ['法术抗性', ''], aspd: ['攻击速度', ''], attack_speed: ['攻击速度', ''], cost: ['部署费用', ''],
-  blockCnt: ['阻挡数', ''], block_cnt: ['阻挡数', ''], respawnTime: ['再部署时间', '秒'], respawn_time: ['再部署时间', '秒'],
-  baseAttackTime: ['攻击间隔', '秒'], base_attack_time: ['攻击间隔', '秒'], moveSpeed: ['移动速度', ''], hpRecoveryPerSec: ['每秒回复', ''],
+  maxHp: [t('生命上限'), ''], max_hp: [t('生命上限'), ''], atk: [t('攻击力'), ''], def: [t('防御力'), ''], res: [t('法术抗性'), ''],
+  magic_resistance: [t('法术抗性'), ''], aspd: [t('攻击速度'), ''], attack_speed: [t('攻击速度'), ''], cost: [t('部署费用'), ''],
+  blockCnt: [t('阻挡数'), ''], block_cnt: [t('阻挡数'), ''], respawnTime: [t('再部署时间'), t('秒')], respawn_time: [t('再部署时间'), t('秒')],
+  baseAttackTime: [t('攻击间隔'), t('秒')], base_attack_time: [t('攻击间隔'), t('秒')], moveSpeed: [t('移动速度'), ''], hpRecoveryPerSec: [t('每秒回复'), ''],
 });
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -288,10 +289,10 @@ export function skillTags(rec) {
   const passive = rec.skillType === 'PASSIVE' || rec.spType === 'ON_DEPLOY' || rec.spType === 8;
   const spKind = passive ? 'passive' : rec.spType === 'INCREASE_WHEN_ATTACK' ? 'atk' : rec.spType === 'INCREASE_WHEN_TAKEN_DAMAGE' ? 'def' : 'time';
   let duration = null;
-  if (rec.durationType === 'AMMO') duration = '弹药';
-  else if (Number(rec.duration) > 0) duration = `${Number(rec.duration)}秒`;
+  if (rec.durationType === 'AMMO') duration = t('弹药');
+  else if (Number(rec.duration) > 0) duration = `${Number(rec.duration)}秒`; // i18n-ok ("秒" is the same in Japanese)
   return {
-    sp: SP_TYPE[rec.spType] || (passive ? '被动' : '技力'),
+    sp: SP_TYPE[rec.spType] || (passive ? t('被动') : t('技力')),
     spKind,
     init: passive ? null : Number.isFinite(rec.initSp) ? rec.initSp : 0,
     cost: passive ? null : Number.isFinite(rec.spCost) ? rec.spCost : 0,

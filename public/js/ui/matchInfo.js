@@ -20,6 +20,7 @@ import { UnitThumb } from './gameComponents.js';
 import { bannedPerBond, disabledBondSets, briefingBondTip } from './gameLogic.js';
 import { bondIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
+import { t } from '../i18n.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -79,47 +80,47 @@ export function MatchBondRow({ title, micro, bonds, model }) {
 }
 
 /**
- * The legend under the bond rows ("或本模式禁用" only when the mode switches bonds off).
+ * The legend under the bond rows ("或本模式禁用" only when the mode switches bonds off). // i18n-ok
  * @param {{ model: MatchInfoModel }} props
  */
 export function MatchLegend({ model }) {
-  return html`<p class="brief-legend"><span class="brief-legend__off"></span>灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）${model.sets.off.size ? '，或本模式禁用' : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>该盟约中无法出现的干员数</p>`;
+  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）')}${model.sets.off.size ? t('，或本模式禁用') : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>${t('该盟约中无法出现的干员数')}</p>`;
 }
 
 /**
- * 本局禁用干员: the count and the greyed avatars by tier.
+ * 本局禁用干员: the count and the greyed avatars by tier. // i18n-ok
  * @param {{ model: MatchInfoModel }} props
  */
 export function BannedOperators({ model }) {
   const { banned } = model;
   return html`<div class="brief-banned">
-    <h3 class="brief-h"><span>本局禁用干员</span><${MicroLabel}>BANNED OPERATORS</${MicroLabel}><b class="num brief-banned__n">${banned.length}</b></h3>
+    <h3 class="brief-h"><span>${t('本局禁用干员')}</span><${MicroLabel}>BANNED OPERATORS</${MicroLabel}><b class="num brief-banned__n">${banned.length}</b></h3>
     ${banned.length ? html`<div class="brief-banned__grid">
       ${banned.map((id) => html`<${UnitThumb} key=${id} kind="chess" id=${id} size="sm" dim=${true} />`)}
-    </div>` : html`<p class="t-dim">本局没有禁用干员</p>`}
+    </div>` : html`<p class="t-dim">${t('本局没有禁用干员')}</p>`}
   </div>`;
 }
 
 /**
- * The briefing's bonds and banned operators: 核心盟约, 附加盟约, the legend, 本局禁用干员.
+ * The briefing's bonds and banned operators: 核心盟约, 附加盟约, the legend, 本局禁用干员. // i18n-ok
  * @param {{ model: MatchInfoModel }} props
  */
 export function MatchInfo({ model }) {
-  return html`<${MatchBondRow} title="核心盟约" micro="CORE BONDS" bonds=${model.core} model=${model} />
-    <${MatchBondRow} title="附加盟约" micro="ADD-ON BONDS" bonds=${model.addon} model=${model} />
+  return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} />
+    <${MatchBondRow} title=${t('附加盟约')} micro="ADD-ON BONDS" bonds=${model.addon} model=${model} />
     <${MatchLegend} model=${model} />
     <${BannedOperators} model=${model} />`;
 }
 
 /**
- * The read-only match-info dialog (the strategy draft's 本局信息): MatchInfo in a Modal that 关闭, a tap outside or Esc
- * closes. `status` (the caller's line, e.g. the draft's turn and countdown) sits left of 关闭.
+ * The read-only match-info dialog (the strategy draft's 本局信息): MatchInfo in a Modal that 关闭, a tap outside or Esc // i18n-ok
+ * closes. `status` (the caller's line, e.g. the draft's turn and countdown) sits left of 关闭. // i18n-ok
  * @param {{ open: boolean, onClose: Function, model: MatchInfoModel|null, status?: any }} props
  */
 export function MatchInfoDialog({ open, onClose, model, status = null }) {
-  return html`<${Modal} open=${open && !!model} onClose=${onClose} title="本局信息" micro="MATCH INFO // BONDS & BANNED OPERATORS" class="minfo-dlg"
+  return html`<${Modal} open=${open && !!model} onClose=${onClose} title=${t('本局信息')} micro="MATCH INFO // BONDS & BANNED OPERATORS" class="minfo-dlg"
     actions=${html`${status ? html`<div class="minfo-dlg__status" data-testid="match-info-status">${status}</div>` : null}
-      <${Button} variant="secondary" icon="close" data-autofocus data-testid="match-info-close" onClick=${onClose}>关闭<//>`}>
+      <${Button} variant="secondary" icon="close" data-autofocus data-testid="match-info-close" onClick=${onClose}>${t('关闭')}<//>`}>
     ${open && model ? html`<${MatchInfo} model=${model} />` : null}
   <//>`;
 }

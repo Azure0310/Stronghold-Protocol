@@ -66,24 +66,36 @@
 
   <div class="rotate-hint" role="alert">
     <div class="rotate-hint__phone"></div>
-    <div class="rotate-hint__title">请将设备横屏</div>
-    <div>卫戍协议：盟约 需要横屏显示以获得完整体验</div>
+    <div class="rotate-hint__title" data-i18n="请将设备横屏">请将设备横屏</div>
+    <div data-i18n="卫戍协议：盟约 需要横屏显示以获得完整体验">卫戍协议：盟约 需要横屏显示以获得完整体验</div>
     <div class="rotate-hint__micro">ROTATE DEVICE</div>
   </div>
 
-  <noscript><p style="color:#c3cbc7;text-align:center;padding:40px">需要启用 JavaScript 才能运行本游戏。</p></noscript>
+  <noscript><p style="color:#c3cbc7;text-align:center;padding:40px">需要启用 JavaScript 才能运行本游戏。<br />このゲームを動かすには JavaScript を有効にしてください。</p></noscript>
   <script>
     // Boot diagnostics (plain ES5: runs everywhere). A browser too old for the app says so instead of spinning forever:
     // no ES modules (nomodule below), a module graph that cannot load (e.g. import maps: Safari / iOS < 16.4), or no
     // boot after 9 s.
+    // Language of these messages (the i18n module may be the very thing that failed to load): same rule as js/i18n.js.
+    window.__spJa = (function () {
+      try {
+        var q = /[?&]lang=(ja|zh)\b/.exec(location.search);
+        if (q) return q[1] === 'ja';
+        var s = localStorage.getItem('sp.lang');
+        if (s === 'ja' || s === 'zh') return s === 'ja';
+      } catch (x) { /* storage blocked */ }
+      return /^ja/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
+    })();
     window.__spBootFail = function (why) {
       var e = document.getElementById('boot-err');
       if (!e || e.getAttribute('data-final')) return;
       var im = false;
       try { im = !!(window.HTMLScriptElement && HTMLScriptElement.supports && HTMLScriptElement.supports('importmap')); } catch (x) { im = false; }
+      var ja = window.__spJa;
       e.textContent = why === 'old' || !im
-        ? '当前浏览器版本过旧，无法运行本游戏。请升级到 iOS / iPadOS 16.4+（Safari 16.4+）、Chrome / Edge 90+ 或 Firefox 108+ 后刷新。'
-        : '游戏脚本加载失败，请检查网络连接后刷新页面。';
+        ? (ja ? 'お使いのブラウザは古いため、このゲームを動かせません。iOS / iPadOS 16.4 以降（Safari 16.4 以降）、Chrome / Edge 90 以降、Firefox 108 以降に更新してから再読み込みしてください。'
+              : '当前浏览器版本过旧，无法运行本游戏。请升级到 iOS / iPadOS 16.4+（Safari 16.4+）、Chrome / Edge 90+ 或 Firefox 108+ 后刷新。')
+        : (ja ? 'ゲームのスクリプトを読み込めませんでした。ネットワーク接続を確認して、ページを再読み込みしてください。' : '游戏脚本加载失败，请检查网络连接后刷新页面。');
       e.setAttribute('data-final', '1');
     };
     // a module graph that fails to link (bare specifier without import-map support) reports here, not on the <script>
@@ -99,7 +111,9 @@
     // If modules never boot (very old browser / blocked script), explain instead of spinning forever.
     setTimeout(function () {
       var b = document.getElementById('boot'), e = document.getElementById('boot-err');
-      if (b && !b.classList.contains('is-done') && e && !e.textContent) e.textContent = '加载时间较长…如长时间无响应，请使用最新版 Chrome / Edge / Safari / Firefox 并刷新页面。';
+      if (b && !b.classList.contains('is-done') && e && !e.textContent) e.textContent = window.__spJa
+        ? '読み込みに時間がかかっています…応答がない場合は、最新の Chrome / Edge / Safari / Firefox でページを再読み込みしてください。'
+        : '加载时间较长…如长时间无响应，请使用最新版 Chrome / Edge / Safari / Firefox 并刷新页面。';
     }, 9000);
   </script>
 </body>

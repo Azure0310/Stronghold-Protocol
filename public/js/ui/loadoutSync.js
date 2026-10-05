@@ -15,6 +15,7 @@ import { createStore, loadPref, savePref } from '../store.js';
 import { data } from '../data.js';
 import { LOADOUT_PREF, parseStored, toStored, sanitizeEntries } from './loadoutModel.js';
 import { toast } from './toasts.js';
+import { t } from '../i18n.js';
 
 export const SYNC_DEBOUNCE_MS = 500;
 export const RETRY_MS = 1500;
@@ -115,7 +116,7 @@ export function installLoadoutSync({ net, getChessReady, lookupChess, timers, ta
           // the server stored it for the next match; the running one keeps the loadout it locked
           lastSent = json;
           setState('locked');
-          if (wasEdit) tell('本局的干员调配已锁定，修改将在下一局生效');
+          if (wasEdit) tell(t('本局的干员调配已锁定，修改将在下一局生效'));
         } else if (code === 'RATE' || code === 'TIMEOUT' || code === 'OFFLINE') { edited = edited || wasEdit; schedule(RETRY_MS); }
         else { console.warn('[loadout] room.loadout refused', code, err && err.detail); setState('error'); }
       }

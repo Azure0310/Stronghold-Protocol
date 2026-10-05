@@ -11,6 +11,11 @@
 //   5. Art/audio (tools/fetch-assets.mjs, ~270 MB into public/assets, resumable, mirror fallback) when public/assets
 //      is missing or data/assets.json lists files that are not on disk. A failure is a warning: the game still runs
 //      with fallback visuals and the next run resumes.
+//   5b. Japanese dictionary (this fork): public/i18n/ja.json, built offline from the hand-written i18n/ja/*.json
+//      (tools/i18n.mjs build) once i18n/ja/00-official.json — the Japanese texts of the official data (© Yostar /
+//      Hypergryph; ~100 MB of game-data tables fetched into .cache by tools/i18n-official.mjs) — has been generated
+//      when it is missing. Neither file is committed. A failure is a warning: the game still runs, with those texts
+//      in Chinese, and the next run retries.
 //   6. Optional: official board/UI art from a locally installed Arknights client (Windows native install, CrossOver
 //      bottle or PlayCover on macOS, or --game <dir>) with tools/local-extract/extract.py in a project-local Python
 //      venv (.venv-extract), then the board tile crops (tools/crop-board-atlas.mjs → tiles.json). Asked once on a
@@ -19,6 +24,7 @@
 // Options:
 //   --check          report only, change nothing (exit 1 when something essential is missing)
 //   --no-assets      skip the art/audio download
+//   --no-ja-official skip generating the official Japanese texts (the hand-written Japanese UI is still built)
 //   --no-local       skip the local-client detection and extraction
 //   --local          extract from the local client without asking (re-extracts when already done)
 //   --game <dir>     AssetBundle root of the local client (…/StreamingAssets/AB/Windows or PlayCover …/Documents/Bundles)
@@ -58,6 +64,9 @@ const EXTRACT_REQ = path.join(ROOT, 'tools', 'local-extract', 'requirements.txt'
 const LOCAL_MANIFEST = path.join(ROOT, 'data', 'local-assets.json');
 const LOCAL_BOARD_ATLAS = path.join(ROOT, 'public', 'assets', 'local', 'map', 'autochess', 'TX_autochessi_D.png');
 const LOCAL_BOARD_TILES = path.join(ROOT, 'public', 'assets', 'local', 'map', 'autochess', 'tiles.json');
+const JA_DIR = path.join(ROOT, 'i18n', 'ja');
+const JA_OFFICIAL = path.join(JA_DIR, '00-official.json');
+const JA_DICT = path.join(ROOT, 'public', 'i18n', 'ja.json');
 
 // ---------------------------------------------------------------------------------------------------
 // Small helpers
@@ -148,6 +157,20 @@ export function checkVendor() {
   const missing = VENDOR_REQUIRED.filter((f) => !exists(path.join(dir, f)));
   const optionalMissing = VENDOR_OPTIONAL.filter((f) => !exists(path.join(dir, f)));
   return { ok: missing.length === 0, missing, optionalMissing };
+}
+
+/** Japanese dictionary: the generated official layer, the built dictionary, and whether the dictionary is older than its sources. */
+export function checkJa() {
+  const official = exists(JA_OFFICIAL);
+  const dict = exists(JA_DICT);
+  let stale = !dict;
+  if (dict) {
+    try {
+      const built = fs.statSync(JA_DICT).mtimeMs;
+      stale = fs.readdirSync(JA_DIR).some((f) => f.endsWith('.json') && fs.statSync(path.join(JA_DIR, f)).mtimeMs > built);
+    } catch { stale = true; }
+  }
+  return { official, dict, stale };
 }
 
 /** data/*.json present and parseable? */
@@ -328,11 +351,12 @@ function ensureVenv(py, log) {
 // ---------------------------------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const o = { check: false, assets: true, local: 'ask', game: null, yes: false, quiet: false, help: false };
+  const o = { check: false, assets: true, jaOfficial: true, local: 'ask', game: null, yes: false, quiet: false, help: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--check') o.check = true;
     else if (a === '--no-assets') o.assets = false;
+    else if (a === '--no-ja-official') o.jaOfficial = false;
     else if (a === '--no-local') o.local = 'no';
     else if (a === '--local') o.local = 'force';
     else if (a === '--game') { o.game = argv[++i] || null; if (o.local !== 'no') o.local = 'force'; }
@@ -422,6 +446,23 @@ async function main() {
     else if (!assets.present) add('warn', '美术/音频 public/assets', '未下载（游戏会用占位图）→ node tools/fetch-assets.mjs');
     else add('warn', '美术/音频 public/assets', `缺 ${assets.missing}/${assets.total} 个文件 → 重新运行 setup 续传`);
   }
+
+  // 5b. Japanese dictionary (this fork): the official Japanese texts are generated here, never committed
+  let ja = checkJa();
+  if (!opts.check && deps.ok) {
+    let generated = false;
+    if (opts.jaOfficial && !ja.official) {
+      log(`\n${c.cyan('▶')} 生成日文版官方文本 i18n/ja/00-official.json（首次需下载约 100 MB 的游戏数据表，可随时中断，重新运行会重试）…`);
+      generated = run(process.execPath, [path.join(ROOT, 'tools', 'i18n-official.mjs'), '--quiet']).ok;
+      if (!generated) log(c.warn('  官方日文文本未生成（网络问题？）。游戏仍可运行，这部分名称和说明显示中文；稍后重新运行 setup 即可重试。'));
+    }
+    if (generated || checkJa().stale) run(process.execPath, [path.join(ROOT, 'tools', 'i18n.mjs'), 'build']);
+    ja = checkJa();
+  }
+  if (!ja.dict) add('warn', '日语词典 public/i18n/ja.json', '未生成（界面显示中文）→ node tools/i18n.mjs build');
+  else if (ja.official) add('ok', '日语词典 public/i18n/ja.json', '含官方日文文本');
+  else add(opts.jaOfficial ? 'warn' : 'skip', '日语词典 public/i18n/ja.json',
+    `${opts.jaOfficial ? '' : '已跳过官方日文文本（--no-ja-official）；'}只有手译部分，干员/技能/敌人的名称和说明显示中文 → npm run i18n:official`);
 
   // 6. local client (optional)
   const local = checkLocal();

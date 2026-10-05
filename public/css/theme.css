@@ -367,3 +367,10 @@ h1, h2, h3, h4, p { margin: 0; }
     transition-duration: 1ms !important;
   }
 }
+
+/* Japanese build (js/i18n.js sets <html lang="ja">): Japanese Han glyph forms and kana first. */
+html:lang(ja) {
+  --font-cjk: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif;
+  --font-num: 'Bender', 'Rajdhani', 'Oxanium', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+  --font-display: 'Novecento', 'Novecento Wide', 'Oxanium', 'Rajdhani', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+}

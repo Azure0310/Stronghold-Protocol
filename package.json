@@ -29,7 +29,8 @@
     "vendor": "node tools/vendor.mjs",
     "build-data": "node tools/build-data.mjs",
     "assets": "node tools/vendor.mjs && node tools/fetch-assets.mjs",
-    "postinstall": "node tools/vendor.mjs",
+    "postinstall": "node tools/vendor.mjs && node tools/i18n.mjs build",
+    "i18n:official": "node tools/i18n-official.mjs && node tools/i18n.mjs build",
     "setup": "node tools/setup.mjs",
     "doctor": "node tools/doctor.mjs",
     "launch": "node scripts/launch.mjs"

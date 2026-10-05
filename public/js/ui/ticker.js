@@ -14,6 +14,7 @@ import { html } from './components.js';
 import { GIcon, RichText } from './gameComponents.js';
 import { useStore } from '../store.js';
 import { audio } from '../audio.js';
+import { tServer } from './toasts.js';
 
 const TICKER_MS = 5200;
 const QUEUE_MAX = 4;
@@ -154,6 +155,6 @@ export function Ticker() {
 
   if (!cur) return null;
   return html`<div class="ticker" role="status" aria-live="polite">
-    <div key=${cur.id} class="ticker__line"><${GIcon} name="flag" class="ticker__icon" /><${RichText} text=${cur.text} /></div>
+    <div key=${cur.id} class="ticker__line"><${GIcon} name="flag" class="ticker__icon" /><${RichText} text=${tServer(cur.text)} /></div>
   </div>`;
 }

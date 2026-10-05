@@ -45,6 +45,7 @@ import { GuideHost } from './ui/guide.js';
 import { installDeviceSupport } from './ui/device.js';
 import { LoadoutHost } from './screens/loadout.js';
 import { installLoadoutSync } from './ui/loadoutSync.js';
+import { t } from './i18n.js';
 
 const RESTORE_GRACE_MS = 1500;
 const JOIN_DELAY_MS = 350;
@@ -55,8 +56,23 @@ const SCREENS = { title: TitleScreen, lobby: LobbyScreen, room: RoomScreen, game
 
 /** Copy of a server message without transport fields. */
 function payload(msg) {
-  const { t, rid, ...rest } = msg; // eslint-disable-line no-unused-vars
+  const { t: _t, rid, ...rest } = msg; // eslint-disable-line no-unused-vars
   return rest;
+}
+
+/**
+ * The server's AI teammates carry Chinese constant names (server/lobby.js BOT_NAMES): translate them once on arrival,
+ * in `list` (a payload's seats / players) of a payload copy made by payload(). Human names are never touched.
+ */
+function withBotNames(p, list = 'players') {
+  const arr = p[list];
+  if (!Array.isArray(arr)) return p;
+  p[list] = arr.map((x) => {
+    if (!x || !x.isBot || typeof x.name !== 'string') return x;
+    const name = t(x.name);
+    return name === x.name ? x : { ...x, name };
+  });
+  return p;
 }
 
 function clearRoomParam() {
@@ -91,7 +107,7 @@ function schedulePendingJoin() {
     const code = s.ui.pendingJoin;
     if (!code || joinInFlight || !s.session.entered || net.status !== 'online') return;
     if (s.room) {
-      if (s.room.code !== code) toast('你已在其他同盟中，请先离开当前同盟', 'warn');
+      if (s.room.code !== code) toast(t('你已在其他同盟中，请先离开当前同盟'), 'warn');
       clearPendingJoin();
       return;
     }
@@ -163,13 +179,13 @@ function onWelcome(msg) {
 }
 
 function onRoomState(msg) {
-  const room = payload(msg);
+  const room = withBotNames(payload(msg), 'seats');
   roomStateAt = Date.now();
   const myId = store.get().me.playerId;
   const seats = Array.isArray(room.seats) ? room.seats : [];
   if (myId != null && seats.length && !seats.some((s) => s && s.playerId === myId)) {
     // We are no longer seated (kicked / left elsewhere).
-    if (store.get().room) toast('你已不在该同盟中', 'warn');
+    if (store.get().room) toast(t('你已不在该同盟中'), 'warn');
     store.set({ room: null, match: emptyMatch() });
     return;
   }
@@ -183,8 +199,8 @@ function onRoomState(msg) {
 
 const CLOSE_REASON = {
   // 'timeout' = this player was removed after staying disconnected past the lobby grace (server/lobby.js)
-  host_left: '创建者已离开，同盟已解散', timeout: '由于长时间断开连接，你已离开同盟', empty: '同盟已解散',
-  kicked: '你已被移出同盟', ended: '模拟已结束', expired: '同盟已过期', shutdown: '服务器维护中，同盟已关闭',
+  host_left: t('创建者已离开，同盟已解散'), timeout: t('由于长时间断开连接，你已离开同盟'), empty: t('同盟已解散'),
+  kicked: t('你已被移出同盟'), ended: t('模拟已结束'), expired: t('同盟已过期'), shutdown: t('服务器维护中，同盟已关闭'),
 };
 
 function wireNet() {
@@ -200,20 +216,20 @@ function wireNet() {
   net.on('clock', (c) => store.set({ clock: { offset: c.offset, rtt: c.rtt, synced: c.synced } }));
   net.on('welcome', onWelcome);
   net.on('helloError', (err) => toastError(err));
-  net.on('replaced', () => toast('该身份已在其他页面登录，本页已断开', 'warn', { ttl: 6000 }));
+  net.on('replaced', () => toast(t('该身份已在其他页面登录，本页已断开'), 'warn', { ttl: 6000 }));
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
   net.on('room.closed', (msg) => {
     backToLobby();
-    toast(CLOSE_REASON[msg.reason] || (typeof msg.reason === 'string' && msg.reason.length < 60 ? `同盟已关闭：${msg.reason}` : '同盟已关闭'), 'warn');
+    toast(CLOSE_REASON[msg.reason] || (typeof msg.reason === 'string' && msg.reason.length < 60 ? t('同盟已关闭：{reason}', { reason: msg.reason }) : t('同盟已关闭')), 'warn');
   });
-  net.on('m.public', (msg) => { matchAt = Date.now(); store.patch('match', { public: payload(msg) }); maybeFinishRestore(); });
+  net.on('m.public', (msg) => { matchAt = Date.now(); store.patch('match', { public: withBotNames(payload(msg)) }); maybeFinishRestore(); });
   net.on('m.private', (msg) => { matchAt = Date.now(); store.patch('match', { private: payload(msg) }); });
   net.on('m.field', (msg) => store.patch('match', { field: payload(msg) }));
-  net.on('m.result', (msg) => store.patch('match', { result: payload(msg) }));
+  net.on('m.result', (msg) => store.patch('match', { result: withBotNames(payload(msg)) }));
   net.on('m.toast', (msg) => {
     const kind = ['info', 'success', 'warn', 'error'].includes(msg.kind) ? msg.kind : 'info';
-    toast(msg.text, kind);
+    toast(msg.text, kind); // Chinese text composed by the server: toast() translates it (i18n/ja/30-server.json patterns)
   });
   net.on('m.ticker', (msg) => {
     if (typeof msg.text !== 'string') return;
@@ -256,9 +272,9 @@ function ScreenCrashed({ error, reset }) {
   return html`<div class="screen crash">
     <div class="crash__box brackets">
       <${MicroLabel} tone="mint">SYSTEM FAULT<//>
-      <h2>界面发生错误</h2>
+      <h2>${t('界面发生错误')}</h2>
       <p class="t-lo">${String(error?.message || error).slice(0, 200)}</p>
-      <${Button} variant="primary" icon="refresh" onClick=${reset}>重新加载界面<//>
+      <${Button} variant="primary" icon="refresh" onClick=${reset}>${t('重新加载界面')}<//>
     </div>
   </div>`;
 }
@@ -284,8 +300,8 @@ async function waitForFonts(ms) {
   const fonts = document.fonts;
   if (!fonts || typeof fonts.load !== 'function') return;
   const loads = [
-    fonts.load('900 1em "Noto Sans SC"', '卫戍协议盟约'),
-    fonts.load('700 1em "Noto Sans SC"', '开始'),
+    fonts.load('900 1em "Noto Sans SC"', '卫戍协议盟约'), // i18n-ok (glyph probe for the font download, not displayed)
+    fonts.load('700 1em "Noto Sans SC"', '开始'), // i18n-ok
     fonts.load('700 1em Bender', '0123456789'),
     fonts.load('700 1em Rajdhani', '0123456789'),
   ].map((p) => p.catch(() => null));
@@ -300,7 +316,7 @@ function installGlobalErrorHandlers() {
     if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) { console.warn('[app] ignored rejection', err.name); return; }
     console.error('[app] unhandled rejection', err);
     if (err instanceof NetError) toastError(err);
-    else toast(`发生意外错误：${describeError(err)}`.slice(0, 120), 'error');
+    else toast(t('发生意外错误：{msg}', { msg: describeError(err) }).slice(0, 120), 'error');
   });
   window.addEventListener('error', (ev) => {
     if (!(ev instanceof ErrorEvent)) return; // resource load errors are not script errors
@@ -356,5 +372,5 @@ async function boot() {
 boot().catch((err) => {
   console.error('[app] boot failed', err);
   const el = document.getElementById('boot-err');
-  if (el) el.textContent = '启动失败，请刷新页面重试';
+  if (el) el.textContent = t('启动失败，请刷新页面重试');
 });

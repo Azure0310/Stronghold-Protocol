@@ -38,14 +38,18 @@ export const PING_INTERVAL_MS = 4000;
 export const DEAD_AFTER_MS = 15000;
 export const BACKOFF = Object.freeze({ base: 500, factor: 2, max: 10000, jitter: 0.2 });
 
-/** Client-side error codes (in addition to shared ERR codes). */
+/**
+ * Client-side error codes (in addition to shared ERR codes). The texts are source-language keys: NetError.message
+ * carries them as they are (ui/connBanner.js compares `lastError.text` with VERSION) and every display site runs them
+ * through t() (ui/toasts.js describeError / toast, connBanner).
+ */
 export const CLIENT_ERR_TEXT = Object.freeze({
-  TIMEOUT: '请求超时，请重试',
-  OFFLINE: '未连接到服务器',
-  DISCONNECTED: '连接已断开，请重试',
-  CLOSED: '连接已关闭',
-  REPLACED: '该身份已在其他页面登录',
-  VERSION: '客户端版本与服务器不一致，请刷新页面',
+  TIMEOUT: '请求超时，请重试', // i18n-ok
+  OFFLINE: '未连接到服务器', // i18n-ok
+  DISCONNECTED: '连接已断开，请重试', // i18n-ok
+  CLOSED: '连接已关闭', // i18n-ok
+  REPLACED: '该身份已在其他页面登录', // i18n-ok
+  VERSION: '客户端版本与服务器不一致，请刷新页面', // i18n-ok
 });
 
 /** Server close code: the session was taken over by another socket (server/net.js CLOSE.REPLACED). */
@@ -62,7 +66,7 @@ const QUIET_SWAP_MIN_AGE_MS = 5000;
  * @returns {string}
  */
 export function errorText(code, msg) {
-  return ERR_TEXT[code] || CLIENT_ERR_TEXT[code] || (typeof msg === 'string' && msg) || String(code || '未知错误');
+  return ERR_TEXT[code] || CLIENT_ERR_TEXT[code] || (typeof msg === 'string' && msg) || String(code || '未知错误'); // i18n-ok (displayed through t())
 }
 
 /** Error thrown/rejected by requests. `code` is an ERR code or a CLIENT_ERR_TEXT key. */

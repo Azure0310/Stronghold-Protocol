@@ -99,6 +99,7 @@
 // `data` is the client data store (public/js/data.js: lookup(file, id)) or plain { chess, tokens, items, enemies } maps.
 
 import { GEO, ANIM, UF } from '../../../shared/constants.js';
+import { t } from '../i18n.js';
 import { fxForm } from '../../../shared/protocol.js';
 import { Camera, presetCamera, lerpCamera, easeInOutCubic, pickTile, normRect } from './projection.js';
 import { SnapshotBuffer, frameTime } from './interp.js';
@@ -420,7 +421,7 @@ export async function createFieldView(host, options = {}) {
   canvas.style.height = '100%';
   canvas.style.touchAction = 'none';
   canvas.style.userSelect = 'none';
-  canvas.setAttribute('aria-label', '战场');
+  canvas.setAttribute('aria-label', t('战场'));
   canvas.style.position = 'relative';
   canvas.style.zIndex = '1';
   host.appendChild(canvas);

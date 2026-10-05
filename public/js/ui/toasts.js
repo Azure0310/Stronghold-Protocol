@@ -8,6 +8,28 @@ import { h } from '../../vendor/preact.module.js';
 import { useEffect, useReducer } from '../../vendor/hooks.module.js';
 import htm from '../../vendor/htm.module.js';
 import { ERR_TEXT } from '../../../shared/constants.js';
+import { t, hasTranslation } from '../i18n.js';
+
+const CJK_RE = /[㐀-鿿]/; // i18n-ok
+const KANA_RE = /[぀-ヿ]/; // i18n-ok
+/** A run of ideographs (with Latin letters / digits / · inside): a name in text composed by the server. */
+const NAME_RUN = /[A-Za-z0-9·]*[㐀-鿿][㐀-鿿A-Za-z0-9·]*/g; // i18n-ok
+
+/**
+ * Translate a text the server composed (Chinese, names and numbers already filled in: m.toast, m.ticker, errors).
+ * t() matches the sentence against the dictionary's `{name}` keys, but a placeholder is filled with what it captured —
+ * the Chinese name of an operator, a summon or an AI teammate stays Chinese inside the Japanese sentence. So the
+ * ideograph runs that came from the original text and are dictionary keys themselves are translated one by one
+ * (names in a list are separated by 、 and so are runs of their own). Texts that are not Chinese pass through unchanged.
+ * @param {any} text
+ * @returns {string}
+ */
+export function tServer(text) {
+  const src = String(text ?? '');
+  const out = t(src);
+  if (out === src || !CJK_RE.test(src) || KANA_RE.test(src)) return out;
+  return out.replace(NAME_RUN, (run) => (src.includes(run) && hasTranslation(run) ? t(run) : run));
+}
 
 // no shared static vnodes (see components.js hFresh: htm's static cache would retain unmounted DOM)
 function hFresh(type, props, ...children) {
@@ -29,9 +51,9 @@ const timers = new Map();
 
 const emit = () => { for (const fn of [...listeners]) { try { fn(toasts); } catch (err) { console.error(err); } } };
 
-function schedule(t) {
-  clearTimeout(timers.get(t.id));
-  timers.set(t.id, setTimeout(() => dismissToast(t.id), t.ttl));
+function schedule(item) {
+  clearTimeout(timers.get(item.id));
+  timers.set(item.id, setTimeout(() => dismissToast(item.id), item.ttl));
 }
 
 /**
@@ -43,19 +65,22 @@ function schedule(t) {
  */
 export function toast(text, kind = 'info', opts = {}) {
   const k = TOAST_KINDS.includes(kind) ? kind : 'info';
-  const msg = String(text ?? '').slice(0, 200).trim();
-  if (!msg) return -1;
+  const src = String(text ?? '').slice(0, 200).trim();
+  if (!src) return -1;
+  // The one door every message passes: texts the server composed (m.toast: Chinese, numbers already filled in) and
+  // errors are translated here; an already translated text passes through t() unchanged.
+  const msg = tServer(src).slice(0, 200);
   const now = Date.now();
   const ttl = Number.isFinite(opts.ttl) && opts.ttl > 0 ? opts.ttl : DEFAULT_MS[k];
-  const same = toasts.find((t) => !t.leaving && t.text === msg && t.kind === k && now - t.at < MERGE_WINDOW_MS + t.ttl);
+  const same = toasts.find((x) => !x.leaving && x.text === msg && x.kind === k && now - x.at < MERGE_WINDOW_MS + x.ttl);
   if (same) {
-    toasts = toasts.map((t) => (t === same ? { ...t, count: t.count + 1, at: now, ttl } : t));
-    schedule(toasts.find((t) => t.id === same.id));
+    toasts = toasts.map((x) => (x === same ? { ...x, count: x.count + 1, at: now, ttl } : x));
+    schedule(toasts.find((x) => x.id === same.id));
     emit();
     return same.id;
   }
-  const t = { id: ++seq, text: msg, kind: k, count: 1, at: now, ttl, leaving: false };
-  toasts = [...toasts, t];
+  const item = { id: ++seq, text: msg, kind: k, count: 1, at: now, ttl, leaving: false };
+  toasts = [...toasts, item];
   // Cap the stack: drop the oldest immediately.
   while (toasts.length > MAX_TOASTS) {
     const old = toasts[0];
@@ -63,9 +88,9 @@ export function toast(text, kind = 'info', opts = {}) {
     timers.delete(old.id);
     toasts = toasts.slice(1);
   }
-  schedule(t);
+  schedule(item);
   emit();
-  return t.id;
+  return item.id;
 }
 
 /**
@@ -73,10 +98,10 @@ export function toast(text, kind = 'info', opts = {}) {
  * @param {number} id
  */
 export function dismissToast(id) {
-  const t = toasts.find((x) => x.id === id);
-  if (!t) return;
+  const item = toasts.find((x) => x.id === id);
+  if (!item) return;
   clearTimeout(timers.get(id));
-  if (t.leaving) return;
+  if (item.leaving) return;
   toasts = toasts.map((x) => (x.id === id ? { ...x, leaving: true } : x));
   emit();
   timers.set(id, setTimeout(() => {
@@ -92,12 +117,14 @@ export function dismissToast(id) {
  * @returns {string}
  */
 export function describeError(err) {
-  if (!err) return '发生未知错误';
-  if (typeof err === 'string') return ERR_TEXT[err] || err;
-  if (err.code && ERR_TEXT[err.code]) return ERR_TEXT[err.code];
-  if (typeof err.message === 'string' && err.message) return err.message;
-  if (typeof err.msg === 'string' && err.msg) return err.msg;
-  return '发生未知错误';
+  // ERR_TEXT (shared/, Chinese), NetError.message (net.js CLIENT_ERR_TEXT, Chinese: connBanner compares it) and a
+  // server `msg` are all source-language texts: translated for display here (t() leaves unknown texts as they are)
+  if (!err) return t('发生未知错误');
+  if (typeof err === 'string') return t(ERR_TEXT[err] || err);
+  if (err.code && ERR_TEXT[err.code]) return t(ERR_TEXT[err.code]);
+  if (typeof err.message === 'string' && err.message) return t(err.message);
+  if (typeof err.msg === 'string' && err.msg) return t(err.msg);
+  return t('发生未知错误');
 }
 
 /**
@@ -125,12 +152,12 @@ export function ToastHost() {
   }, []);
   return html`
     <div class="toast-host" role="status" aria-live="polite">
-      ${toasts.map((t) => html`
-        <div key=${t.id} class=${`toast toast--${t.kind}${t.leaving ? ' is-leaving' : ''}`}
-             onClick=${() => dismissToast(t.id)}>
-          <svg class="toast__icon" viewBox="0 0 24 24" aria-hidden="true"><path d=${ICONS[t.kind]} /></svg>
-          <span class="toast__text">${t.text}</span>
-          ${t.count > 1 ? html`<span class="toast__count">×${t.count}</span>` : null}
+      ${toasts.map((x) => html`
+        <div key=${x.id} class=${`toast toast--${x.kind}${x.leaving ? ' is-leaving' : ''}`}
+             onClick=${() => dismissToast(x.id)}>
+          <svg class="toast__icon" viewBox="0 0 24 24" aria-hidden="true"><path d=${ICONS[x.kind]} /></svg>
+          <span class="toast__text">${x.text}</span>
+          ${x.count > 1 ? html`<span class="toast__count">×${x.count}</span>` : null}
         </div>`)}
     </div>`;
 }

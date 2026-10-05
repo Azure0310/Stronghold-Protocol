@@ -11,6 +11,10 @@
 #          -v "$PWD/public/assets:/app/public/assets:ro" stronghold-protocol
 #      (public/fonts, data/assets.json and data/local-assets.json are copied from the build context when present)
 # Without any art the game still runs with placeholder visuals.
+# Japanese UI (i18n/ja/*.json → public/i18n/ja.json) is built in every image. The Japanese texts of the official data
+# (i18n/ja/00-official.json, © Yostar / Hypergryph, never in the repository) are generated while building with
+# FETCH_ASSETS=1, or copied from the build context when the host already ran `npm run i18n:official`; without them
+# those names and descriptions stay in Chinese.
 #
 # Run:  docker run -d --name stronghold -p 3000:3000 --restart unless-stopped stronghold-protocol
 # Env:  PORT (3000), HOST (0.0.0.0), SP_COMBAT (client|server), SP_VERIFY (off|sample|all), TRUST_PROXY (auto|1|0), DEBUG
@@ -33,10 +37,13 @@ COPY tools ./tools
 COPY data ./data
 COPY public ./public
 COPY docs/research ./docs/research
+COPY i18n ./i18n
 RUN node tools/vendor.mjs \
  && if [ "$FETCH_ASSETS" = "1" ]; then \
       node tools/fetch-assets.mjs || echo "WARNING: art download incomplete; the image falls back to placeholder art"; \
+      node tools/i18n-official.mjs --quiet || echo "WARNING: official Japanese texts not generated; those names stay in Chinese"; \
     fi \
+ && node tools/i18n.mjs build \
  && rm -rf .cache
 
 # ---- 3. runtime ---------------------------------------------------------------------------------------

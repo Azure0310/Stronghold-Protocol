@@ -16,6 +16,10 @@
 // `loadData(...)` to await, or the `useData(...)` hook to re-render when files arrive.
 
 import { useEffect, useReducer } from '../vendor/hooks.module.js';
+import { localizeJson } from './i18n.js';
+
+/** Files with no display text: never walked by the localiser (assets.json alone is ~700 KB of URLs). */
+const NO_TEXT_FILES = new Set(['assets', 'local']);
 
 /** Known data files (name → URL basename). Unknown names are allowed too (`/data/<name>.json`). */
 export const DATA_FILES = Object.freeze({
@@ -93,13 +97,15 @@ const transientFailure = (err) => {
  * A file is downloaded once per page (the texts of the game are static data, never fetched again during a match —
  * user playtest #3 item 9); a transient failure is retried (RETRY_DELAYS_MS) while the file stays 'loading', so a
  * network hiccup does not leave the texts of a whole session missing.
- * @param {{ fetch?: typeof fetch, base?: string, retryDelays?: number[], wait?: (ms: number) => Promise<void> }} [opts]
+ * Texts are replaced with the page language's translation as a file arrives (i18n.js localizeJson; `localize` overrides).
+ * @param {{ fetch?: typeof fetch, base?: string, retryDelays?: number[], wait?: (ms: number) => Promise<void>, localize?: (json: any) => any }} [opts]
  */
 export function createDataStore(opts = {}) {
   const base = opts.base ?? '/data/';
   const doFetch = opts.fetch || ((...a) => globalThis.fetch(...a));
   const retryDelays = Array.isArray(opts.retryDelays) ? opts.retryDelays : RETRY_DELAYS_MS;
   const wait = opts.wait || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const localize = opts.localize || localizeJson;
   /** @type {Map<string, { status: 'loading'|'ready'|'missing', promise: Promise<any>, value: any, index: Map<string, any>|null }>} */
   const entries = new Map();
   const listeners = new Set();
@@ -125,7 +131,8 @@ export function createDataStore(opts = {}) {
           if (!res || !res.ok) throw Object.assign(new Error(`HTTP ${res ? res.status : '???'}`), { status: res ? res.status : null });
           let json;
           try { json = await res.json(); } catch (err) { throw Object.assign(err instanceof Error ? err : new Error(String(err)), { badJson: true }); }
-          entry.value = json;
+          // display copy only: the browser simulation fetches its own pristine files (battle/runner.js loadBrowserSim)
+          entry.value = NO_TEXT_FILES.has(name) ? json : localize(json);
           entry.status = 'ready';
           break;
         } catch (err) {

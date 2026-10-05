@@ -13,6 +13,12 @@ data/local-assets.json
 # download caches, upstream tables, ledgers, reports, setup state
 .cache/
 
+# --- Japanese texts of the official data: (c) Yostar / Hypergryph, generated locally, NEVER committed -------
+# tools/i18n-official.mjs → i18n/ja/00-official.json (operator / skill / enemy names and descriptions from the ja_JP game data)
+i18n/ja/00-official.json
+# tools/i18n.mjs build → the dictionary the browser loads (merges the hand-written i18n/ja/*.json with the file above)
+public/i18n/ja.json
+
 # --- Python (optional local-client extraction) ----------------------------------------------------
 .venv*/
 venv/

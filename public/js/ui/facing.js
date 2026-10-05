@@ -29,7 +29,7 @@ export const DIR_VEC = Object.freeze({
 });
 
 /** Chinese label (for aria / tooltips). */
-export const DIR_LABEL = Object.freeze({ UP: '上', RIGHT: '右', DOWN: '下', LEFT: '左' });
+export const DIR_LABEL = Object.freeze({ UP: '上', RIGHT: '右', DOWN: '下', LEFT: '左' }); // i18n-ok (the same characters in Japanese)
 
 /** Normalise any direction spelling ('up', 'Right', 1/−1 facing) to UP|RIGHT|DOWN|LEFT; unknown → `fallback`. */
 export function normDir(d, fallback = DEFAULT_DIR) {

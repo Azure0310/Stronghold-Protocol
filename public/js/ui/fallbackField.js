@@ -20,6 +20,7 @@
 import { render } from '../../vendor/preact.module.js';
 import { html, TierChip } from './components.js';
 import { GEO } from '../../../shared/constants.js';
+import { t } from '../i18n.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
 import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
 
@@ -126,9 +127,9 @@ export function createFallbackView(host, opts = {}) {
     return chessAvatarUrl(mm, lookup('chess', p.id));
   }
   function pieceName(p) {
-    if (p.kind === 'item') return lookup('items', p.id)?.name || '道具';
-    if (p.kind === 'token') return lookup('tokens', p.id)?.name || '召唤物';
-    return lookup('chess', p.id)?.name || '干员';
+    if (p.kind === 'item') return lookup('items', p.id)?.name || t('道具');
+    if (p.kind === 'token') return lookup('tokens', p.id)?.name || t('召唤物');
+    return lookup('chess', p.id)?.name || t('干员');
   }
 
   function Piece({ p, x, y, L, area }) {
@@ -291,7 +292,7 @@ export function createFallbackView(host, opts = {}) {
     });
     return html`<div class="ff-board ff-board--pen" style=${`left:${left}px;top:${top}px;width:${bw}px;height:${tile * rows}px;--tile:${tile}px`}>
       ${cells}${figs}
-      ${models.length ? null : html`<p class="ff-pen__empty">暂无敌方情报</p>`}
+      ${models.length ? null : html`<p class="ff-pen__empty">${t('暂无敌方情报')}</p>`}
     </div>`;
   }
 
@@ -359,7 +360,7 @@ export function createFallbackView(host, opts = {}) {
     })() : null;
     if (st.camera === 'pen') { render(html`${penView()}<div class="ff-badge">SIMPLIFIED VIEW</div>`, root); return; }
     render(html`<div class=${cx('ff-board', `ff-board--${st.mode}`, `ff-cam--${st.camera}`)} style=${`left:${L.left}px;top:${L.top}px;width:${L.bw}px;height:${L.bh}px;--tile:${L.tile}px`}>
-      ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>整备区</span><i></i></div>` : null}
+      ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>${t('整备区')}</span><i></i></div>` : null}
       ${tiles}${hand}${units}${pieces}${floats}
     </div>${ghost}
     <div class="ff-badge">SIMPLIFIED VIEW</div>`, root);
