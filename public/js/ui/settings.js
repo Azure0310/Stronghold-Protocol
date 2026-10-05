@@ -79,7 +79,7 @@ export function SettingsModal({ open, onClose }) {
       </div>
       ${touchUi
         ? html`<p class="set-hint">${t('触屏操作：点击单位选中（撤退 / 出售）· 长按单位或卡牌查看详情 · 拖动部署后滑动选择朝向')}</p>`
-        : html`<p class="set-hint">${t('快捷键')}：<kbd>R</kbd> ${t('刷新')} · <kbd>F</kbd> ${t('冻结', null, 'shop')} · <kbd>D</kbd> ${t('升级')} · <kbd>Space</kbd> ${t('准备就绪')} · <kbd>Esc</kbd> ${t('关闭弹窗')} · ${t('右键查看详情')}</p>`}
+        : html`<p class="set-hint">${t('快捷键')}：<kbd>R</kbd> ${t('刷新')} · <kbd>F</kbd> ${t('冻结', null, 'shop')} · <kbd>D</kbd> ${t('升级')} · <kbd>Q</kbd> ${t('撤退选中干员')} · <kbd>X</kbd> ${t('出售选中干员')} · <kbd>Space</kbd> ${t('准备就绪')} · <kbd>Esc</kbd> ${t('关闭弹窗')} · ${t('右键查看详情')}</p>`}
     </div>
   <//>`;
 }
