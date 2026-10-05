@@ -77,8 +77,8 @@ English summary: [README.md](README.md#english)（上流の英語の要約。日
 2. **取得・セットアップ・起動**
 
 ```bash
-git clone <このリポジトリの URL>
-cd <クローンしたフォルダー>
+git clone https://github.com/Azure0310/Stronghold-Protocol.git
+cd Stronghold-Protocol
 npm install        # 依存をインストール（postinstall が pixi / preact / three を public/vendor にコピーし、日本語の辞書をビルドする）
 npm run setup      # 環境を確認し、公開ミラーから美術 / 音声（約 270 MB）と日本版の公式テキスト（約 100 MB）を取得（中断可。再実行すると続きから）
 npm start          # サーバー起動：http://localhost:3000
