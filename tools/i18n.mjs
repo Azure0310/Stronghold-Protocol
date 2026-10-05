@@ -131,10 +131,12 @@ function walk(dir, files = []) {
  * Keys that need a translation: the static argument of every `t('…')` call in public/js, and every Chinese string literal
  * of shared/ (that code also runs in Node, so it holds plain Chinese texts the client translates when it shows them:
  * `t(ERR_TEXT[code])`). Also the locations of `t()` calls with a dynamic key (not allowed).
+ * A call with a context, `t('领袖', null, 'enemy')` (params null / undefined / an object literal without nested braces),
+ * is the key `enemy::领袖`; `plainOf` maps it to the plain key, which is its fallback at run time (public/js/i18n.js).
  */
 function codeKeys() {
-  const keys = new Map(); const dynamic = [];
-  const call = /(?<![\w.$])t\(\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)/g;
+  const keys = new Map(); const dynamic = []; const plainOf = new Map();
+  const call = /(?<![\w.$])t\(\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)(?:\s*,\s*(?:null|undefined|\{[^{}]*\})\s*,\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"))?/g;
   const literal = /'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`/g;
   const evalLit = (lit) => (lit[0] === '`' ? lit.slice(1, -1) : (0, eval)(lit));
   for (const f of walk(path.join(ROOT, 'public/js'))) {
@@ -148,7 +150,11 @@ function codeKeys() {
       if (lit[0] === '`' && lit.includes('${')) { dynamic.push(`${rel}:${line}`); continue; }
       let key;
       try { key = evalLit(lit); } catch { dynamic.push(`${rel}:${line}`); continue; }
-      if (!keys.has(key)) keys.set(key, `${rel}:${line}`);
+      let ctx = null;
+      try { ctx = m[2] ? evalLit(m[2]) : null; } catch { /* a context that is no static literal: the plain key counts */ }
+      const k = ctx ? `${ctx}::${key}` : key;
+      if (ctx) plainOf.set(k, key);
+      if (!keys.has(k)) keys.set(k, `${rel}:${line}`);
     }
   }
   for (const f of walk(path.join(ROOT, 'shared'))) {
@@ -163,7 +169,7 @@ function codeKeys() {
       if (!keys.has(key)) keys.set(key, `${rel}:${code.slice(0, m.index).split('\n').length}`);
     }
   }
-  return { keys, dynamic };
+  return { keys, dynamic, plainOf };
 }
 
 /** Every distinct Chinese string value of the data files data.js localises. */
@@ -185,15 +191,17 @@ function dataStrings() {
 function coverage(o) {
   const { merged } = readDictFiles(o.lang);
   const has = (k) => merged.has(k);
-  const { keys, dynamic } = codeKeys();
+  const { keys, dynamic, plainOf } = codeKeys();
   const data = dataStrings();
-  const missCode = [...keys].filter(([k]) => !has(k));
+  // t(key, params, ctx) looks up "ctx::key" first and falls back to the plain key (public/js/i18n.js)
+  const missCode = [...keys].filter(([k]) => !has(k) && !(plainOf.has(k) && has(plainOf.get(k))));
+  const plainUsed = new Set(plainOf.values());
   const missData = [...data].filter(([k]) => !has(k));
   const byField = {};
   for (const [, where] of missData) byField[where] = (byField[where] || 0) + 1;
   console.log(`code  : ${keys.size} t() keys, ${keys.size - missCode.length} translated, ${missCode.length} missing${dynamic.length ? `, ${dynamic.length} dynamic key(s) (not allowed)` : ''}`);
   console.log(`data  : ${data.size} strings, ${data.size - missData.length} translated, ${missData.length} missing`);
-  console.log(`dict  : ${merged.size} entries, ${[...merged.keys()].filter((k) => !keys.has(k) && !data.has(k)).length} not referenced by code or data (server / dynamic uses are fine)`);
+  console.log(`dict  : ${merged.size} entries, ${[...merged.keys()].filter((k) => !keys.has(k) && !data.has(k) && !plainUsed.has(k)).length} not referenced by code or data (server / dynamic uses are fine)`);
   for (const d of dynamic.slice(0, 20)) console.log(`  dynamic t() key at ${d}`);
   for (const [k, where] of missCode.slice(0, o.list)) console.log(`  code: ${where}  ${JSON.stringify(k).slice(0, 100)}`);
   for (const [k, where] of missData.slice(0, o.list)) console.log(`  data: ${where}  ${JSON.stringify(k).slice(0, 100)}`);
