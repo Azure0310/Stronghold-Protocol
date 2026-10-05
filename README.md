@@ -6,6 +6,8 @@
 ![license](https://img.shields.io/badge/code%20license-GPL--3.0--or--later-blue)
 ![node](https://img.shields.io/badge/node-22%20%7C%2024-339933)
 
+> **日本語版：** このリポジトリは [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) に日本語表示を足したフォークです。日本語の説明と遊び方は **[README.ja.md](README.ja.md)**（ゲーム画面は `?lang=ja`）。
+
 ## 声明
 
 > [!IMPORTANT]
