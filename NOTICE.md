@@ -30,6 +30,7 @@ Copyright (C) 2026 Stronghold-Protocol contributors
 - Release 完整包中的 `public/assets/**`（含从官方客户端本地提取的 3D 棋盘模型与贴图 `public/assets/local/**`）和 `public/fonts/**`（字体归各自作者）；
 - 由官方数据表生成的 `data/*.json`，以及含有或派生自游戏数据的 `docs/research/*.json`、`test/fixtures/official-waves.json`、`public/dev/recordings/*.json`；
 - `docs/img/` 中的游戏截图；
+- 日语版分叉：由日本版官方数据（Yostar 的 ja_JP 客户端数据）生成的日文文本 `i18n/ja/00-official.json` 及合并后的 `public/i18n/ja.json`——它们不入库（`.gitignore`），由 `tools/i18n-official.mjs` 在使用者本机生成；
 - `docs/` 中引用的 PRTS、BWIKI、NGA、巴哈姆特等社区页面的文字（仍按其来源的许可，维基文本为 CC BY-NC-SA）。
 
 这些内容**不在 GPL-3.0 授权范围内**，本项目也无权就它们向任何人授予任何权利。

@@ -48,6 +48,10 @@ All names, characters, artwork, Spine models, UI graphics, music, sound effects 
 [fexli/ArknightsResource](https://github.com/fexli/ArknightsResource),
 [isHarryh/Ark-Models](https://github.com/isHarryh/Ark-Models),
 [ArknightsAssets/ArknightsAssets2](https://github.com/ArknightsAssets/ArknightsAssets2) — thanks to their maintainers.
+The Japanese-localisation fork also reads the Japanese client data of
+[Kengxxiao/ArknightsGameData_Yostar](https://github.com/Kengxxiao/ArknightsGameData_Yostar) with
+`tools/i18n-official.mjs`; the generated `i18n/ja/00-official.json` is © Yostar / Hypergryph, git-ignored and never
+committed.
 Quotations of PRTS Wiki, BWIKI, NGA, 巴哈姆特 and other community pages in `docs/` stay under the terms of their
 sources (the wikis' texts are CC BY-NC-SA).
 
